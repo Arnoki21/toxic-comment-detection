@@ -15,9 +15,9 @@ The goal is to classify each Wikipedia discussion comment as **toxic** or **non-
 
 | Team member | Main responsibility | Concrete deliverables | Share |
 | --- | --- | --- |
-| **Member 1: replace with name and group** | Data and database | Download and validate `train.csv`; analyze missing values and class balance; explain the SQLite schema; interpret SQL queries 1-3 | 33% |
-| **Member 2: replace with name and group** | Modeling and evaluation | Explain TF-IDF, Logistic Regression, stratified split, class weights, ROC-AUC, precision, recall, F1, ROC curve, and confusion matrix; run model comparison | 33% |
-| **Member 3: replace with name and group** | Error analysis and delivery | Review false positives and false negatives; update report results, prepare slides, check reproducibility, and lead the project demonstration | 33% |
+| **Alikhan Sailybaev, AAI-2601** | Data and database | Validate `train.csv`; analyze missing values and class balance; explain the SQLite schema; interpret SQL queries 1-3 | 33% |
+| **Danial Shaimurat, AAI-2601** | Modeling and evaluation | Explain TF-IDF, Logistic Regression, stratified split, class weights, ROC-AUC, precision, recall, F1, ROC curve, and confusion matrix; run model comparison | 33% |
+| **Arnur Adilkhan, AAI-2601** | Error analysis and delivery | Review false positives and false negatives; update report results, prepare slides, check reproducibility, and lead the project demonstration | 33% |
 
 All members must understand the full project and be able to run `python -m src.cli`. During the defense, Member 1 presents the data, Member 2 presents models and metrics, and Member 3 presents error analysis and conclusions. Update this table and the same table in the report and presentation before submission.
 
@@ -75,7 +75,7 @@ Or run the reproducible command sequence:
 | `word_tfidf_lr` | Word TF-IDF, 1-2 grams | Clear, interpretable baseline for words and short phrases |
 | `word_char_tfidf_lr` | Word TF-IDF, 1-2 grams; character-within-word TF-IDF, 3-5 grams | Captures spelling variation and obfuscated toxic terms |
 
-Accuracy can be misleading for an imbalanced target, so the project reports ROC-AUC, PR-AUC, precision, recall, F1, and a confusion matrix at threshold 0.50. The generated false-positive and false-negative SQL queries support honest error analysis.
+Accuracy can be misleading for an imbalanced target, so the project reports ROC-AUC, PR-AUC, precision, recall, F1, and a confusion matrix at threshold 0.50. The generated false-positive and false-negative SQL queries support honest error analysis. The pipeline also produces class-balance, comment-length, and common n-gram EDA figures.
 
 ## Expected outputs
 

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import ConfusionMatrixDisplay, average_precision_score, confusion_matrix, f1_score, precision_score, recall_score, roc_auc_score, roc_curve
 from sklearn.model_selection import train_test_split
@@ -17,9 +17,9 @@ from sklearn.pipeline import FeatureUnion, Pipeline
 from .config import RANDOM_STATE
 
 
-def build_models() -> dict[str, Pipeline]:
+def build_models(include_bow: bool = False) -> dict[str, Pipeline]:
     classifier = LogisticRegression(max_iter=1000, class_weight="balanced", random_state=RANDOM_STATE)
-    return {
+    models = {
         "word_tfidf_lr": Pipeline([
             ("features", TfidfVectorizer(ngram_range=(1, 2), min_df=2, max_features=80_000, sublinear_tf=True)),
             ("classifier", classifier),
@@ -32,13 +32,23 @@ def build_models() -> dict[str, Pipeline]:
             ("classifier", LogisticRegression(max_iter=1000, class_weight="balanced", random_state=RANDOM_STATE)),
         ]),
     }
+    if include_bow:
+        models["bow_lr"] = Pipeline([
+            ("features", CountVectorizer(ngram_range=(1, 2), min_df=2, max_features=80_000)),
+            ("classifier", classifier),
+        ])
+    return models
 
 
 def _metrics(y_true: pd.Series, probabilities: np.ndarray, model_name: str) -> dict:
     predicted = (probabilities >= 0.5).astype(int)
     return {
         "model_name": model_name,
-        "vectorizer": "word 1-2 gram TF-IDF" if model_name == "word_tfidf_lr" else "word 1-2 gram + character 3-5 gram TF-IDF",
+        "vectorizer": {
+            "bow_lr": "word 1-2 gram Bag-of-Words",
+            "word_tfidf_lr": "word 1-2 gram TF-IDF",
+            "word_char_tfidf_lr": "word 1-2 gram + character 3-5 gram TF-IDF",
+        }[model_name],
         "roc_auc": float(roc_auc_score(y_true, probabilities)),
         "pr_auc": float(average_precision_score(y_true, probabilities)),
         "precision": float(precision_score(y_true, predicted, zero_division=0)),
@@ -48,7 +58,7 @@ def _metrics(y_true: pd.Series, probabilities: np.ndarray, model_name: str) -> d
     }
 
 
-def compare_models(frame: pd.DataFrame, artifacts_dir: Path, test_size: float = 0.2, dataset_source: str = "") -> list[dict]:
+def compare_models(frame: pd.DataFrame, artifacts_dir: Path, test_size: float = 0.2, dataset_source: str = "", include_bow: bool = False) -> list[dict]:
     if frame["toxic"].nunique() != 2:
         raise ValueError("The dataset must contain both toxic and non-toxic comments.")
     if frame["toxic"].value_counts().min() < 2:
@@ -58,7 +68,7 @@ def compare_models(frame: pd.DataFrame, artifacts_dir: Path, test_size: float = 
     results: list[dict] = []
     best_model = None
     best_probabilities = None
-    for name, model in build_models().items():
+    for name, model in build_models(include_bow).items():
         model.fit(train["comment_text"], train["toxic"])
         probabilities = model.predict_proba(test["comment_text"])[:, 1]
         result = _metrics(test["toxic"], probabilities, name)

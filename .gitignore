@@ -1,8 +1,10 @@
 __pycache__/
 .pytest_cache/
+.pytest-tmp/
 .venv/
 data/raw/*.csv
 data/raw/*.zip
+raw/
 data/processed/*.parquet
 artifacts/*.joblib
 artifacts/*.json

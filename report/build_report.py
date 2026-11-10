@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import csv
 from pathlib import Path
 
 from docx import Document
@@ -13,6 +14,8 @@ from docx.shared import Inches, Pt, RGBColor
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "report" / "toxic_comment_detection_report.docx"
 METRICS = ROOT / "artifacts" / "metrics.json"
+COMPARISON = ROOT / "artifacts" / "comparison.csv"
+ARTIFACTS = ROOT / "artifacts"
 
 
 def shade(cell, fill: str) -> None:
@@ -64,6 +67,19 @@ def add_body(doc: Document, text: str) -> None:
     paragraph.paragraph_format.line_spacing = 1.15
 
 
+def add_figure(doc: Document, image_name: str, caption: str, width: float = 5.7) -> None:
+    image_path = ARTIFACTS / image_name
+    if not image_path.exists():
+        return
+    paragraph = doc.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    paragraph.add_run().add_picture(str(image_path), width=Inches(width))
+    caption_paragraph = doc.add_paragraph(caption)
+    caption_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    caption_paragraph.runs[0].italic = True
+    caption_paragraph.paragraph_format.space_after = Pt(8)
+
+
 def metric_text(metrics: dict, key: str) -> str:
     if key not in metrics:
         return "Run `python -m src.cli compare --data data/raw/train.csv` and rebuild this report."
@@ -75,6 +91,10 @@ def main() -> None:
     metrics = json.loads(METRICS.read_text(encoding="utf-8")) if METRICS.exists() else {}
     if metrics.get("is_synthetic_smoke_test"):
         metrics = {}
+    comparison = []
+    if COMPARISON.exists() and metrics:
+        with COMPARISON.open(encoding="utf-8", newline="") as file:
+            comparison = list(csv.DictReader(file))
     doc = Document()
     section = doc.sections[0]
     section.top_margin = Inches(0.75)
@@ -96,13 +116,13 @@ def main() -> None:
     subtitle.add_run("Final Project Report\nApplied Artificial Intelligence").italic = True
     doc.add_paragraph()
     add_table(doc, ["Full name", "Group", "Contribution"], [
-        ["Replace with member 1", "Replace with group", "Data preparation, database, exploratory analysis"],
-        ["Replace with member 2", "Replace with group", "Model training, evaluation, error analysis"],
-        ["Replace with member 3", "Replace with group", "Documentation, presentation, demonstration"],
+        ["Alikhan Sailybaev", "AAI-2601", "Data preparation, class-imbalance analysis, SQLite database, and SQL analysis"],
+        ["Danial Shaimurat", "AAI-2601", "Bag-of-Words and TF-IDF models, model training, and metric evaluation"],
+        ["Arnur Adilkhan", "AAI-2601", "Error analysis, report and presentation, reproducibility, and project demonstration"],
     ], [1.8, 1.1, 3.6])
 
     add_heading(doc, "Project summary")
-    add_body(doc, "This project classifies English Wikipedia discussion comments as toxic or non-toxic. It uses the Jigsaw Toxic Comment Classification Challenge training data, compares two reproducible scikit-learn models, and records data and experiment outputs in SQLite. The project focuses on class imbalance, ROC-AUC, confusion-matrix interpretation, and qualitative error analysis.")
+    add_body(doc, "This project classifies English Wikipedia discussion comments as toxic or non-toxic. It uses the Jigsaw Toxic Comment Classification Challenge training data, compares two reproducible scikit-learn models, and records data and experiment outputs in SQLite. The project focuses on class imbalance, ROC-AUC, confusion-matrix interpretation, text exploratory analysis, and qualitative error analysis.")
 
     add_heading(doc, "Objectives")
     add_body(doc, "The project aims to build a reliable binary classifier for the toxic label, quantify the effect of feature design, evaluate models with metrics suitable for imbalanced data, and provide a simple console interface for analysis and custom predictions.")
@@ -118,7 +138,7 @@ def main() -> None:
     ], [2.2, 4.3])
 
     add_heading(doc, "Methods")
-    add_body(doc, "The dataset is split into training and test partitions with stratification and random_state=42. Stratification preserves the toxic/non-toxic class ratio in both partitions. Both models use Logistic Regression with class_weight='balanced', which gives more influence to the minority toxic class during optimization.")
+    add_body(doc, "The dataset is split into training and test partitions with stratification and random_state=42. Stratification preserves the toxic/non-toxic class ratio in both partitions. Both models use Logistic Regression with class_weight='balanced', which gives more influence to the minority toxic class during optimization. The project also generates class-distribution, length-distribution, and common n-gram figures.")
     add_table(doc, ["Model", "Features", "Purpose"], [
         ["Word TF-IDF Logistic Regression", "Word 1-2 grams, sublinear term frequency", "Transparent baseline for meaningful words and short phrases"],
         ["Word and character TF-IDF Logistic Regression", "Word 1-2 grams plus character-within-word 3-5 grams", "Tests whether spelling variants and character patterns improve detection"],
@@ -128,6 +148,12 @@ def main() -> None:
     add_heading(doc, "Implementation")
     add_body(doc, "The repository uses modular Python files: data.py validates and cleans input; modeling.py builds, trains, evaluates, and saves models; database.py manages SQLite; and cli.py provides the command line and an interactive menu. The menu uses conditionals, a loop, functions, list and dictionary collections, and try/except handling for missing files and invalid commands.")
     add_body(doc, "SQLite stores comments, model runs, and test predictions. The supplied sql_queries.sql contains eight documented queries, including class balance, comment length, model leaderboard, confusion-matrix cells, high-confidence false positives and false negatives, and a ranked model comparison using a CTE and window function.")
+
+    add_heading(doc, "Exploratory data analysis")
+    add_body(doc, "The EDA examines the toxic/non-toxic class balance, the distribution of comment length, and frequent unigrams and bigrams after lowercasing, tokenization by CountVectorizer, and English stop-word removal. These figures make class imbalance and vocabulary patterns visible before model training.")
+    add_figure(doc, "class_distribution.png", "Figure 1. Toxic and non-toxic class distribution", width=4.7)
+    add_figure(doc, "comment_length_distribution.png", "Figure 2. Comment length distribution by toxic label", width=5.8)
+    add_figure(doc, "top_ngrams.png", "Figure 3. Frequent unigrams and bigrams by class", width=6.0)
 
     add_heading(doc, "Results")
     if metrics:
@@ -144,7 +170,18 @@ def main() -> None:
         ["Training rows", metric_text(metrics, "train_rows")],
         ["Test rows", metric_text(metrics, "test_rows")],
     ], [2.2, 4.3])
+    if comparison:
+        add_table(doc, ["Model", "ROC-AUC", "PR-AUC", "Precision", "Recall", "F1"], [
+            [row["model_name"], f'{float(row["roc_auc"]):.4f}', f'{float(row["pr_auc"]):.4f}', f'{float(row["precision"]):.4f}', f'{float(row["recall"]):.4f}', f'{float(row["f1"]):.4f}']
+            for row in comparison
+        ], [1.55, 0.85, 0.85, 0.85, 0.85, 0.65])
+    add_figure(doc, "roc_curve.png", "Figure 4. ROC curve for the selected model", width=5.2)
+    add_figure(doc, "confusion_matrix.png", "Figure 5. Confusion matrix at threshold 0.50", width=5.2)
     add_body(doc, "The generated roc_curve.png and confusion_matrix.png provide the final visual evidence. Error-analysis SQL queries should be reviewed before deployment because a false positive can suppress acceptable speech and a false negative can leave harmful content visible.")
+
+    add_heading(doc, "Error analysis")
+    add_body(doc, "High-confidence false positives sometimes contain explicit hostile vocabulary but are annotated non-toxic. These cases may reflect quotation, discussion context missing from a single comment, or annotation ambiguity. They show why automated moderation should retain human review for high-impact decisions.")
+    add_body(doc, "False negatives are often long comments, indirect attacks, sarcasm, or toxic phrases embedded in otherwise neutral text. In these cases, the signal can be diluted by surrounding discussion. The selected model has high recall, but these missed examples show the value of future contextual transformer experiments and threshold analysis.")
 
     add_heading(doc, "Conclusion")
     add_body(doc, "The project provides a repeatable baseline for toxic-comment detection and makes its evaluation assumptions explicit. The final model should be selected by measured ROC-AUC on the held-out test split, then checked against precision, recall, and representative error cases. A future extension can compare this baseline with a fine-tuned transformer using the same split and metrics.")

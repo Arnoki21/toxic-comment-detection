@@ -7,7 +7,9 @@ const workspaceDir = process.cwd();
 const SKILL_DIR = "C:/Users/Lenovo/.codex/plugins/cache/openai-primary-runtime/presentations/26.1105.12137/skills/presentations";
 const RUNTIME_PYTHON = "C:/Users/Lenovo/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe";
 const buildDir = path.join(workspaceDir, "build", "presentation");
-const FINAL_PPTX = path.join(workspaceDir, "presentation", "toxic_comment_detection_presentation.pptx");
+const FINAL_PPTX = path.join(workspaceDir, "presentation", "toxic_comment_detection_submission.pptx");
+const metricsPath = path.join(workspaceDir, "artifacts", "metrics.json");
+const metrics = JSON.parse(await fs.readFile(metricsPath, "utf8"));
 
 const colors = { navy: "#12304A", blue: "#1F5D8C", sky: "#EAF3F8", ink: "#15202B", muted: "#56616B", pale: "#F6F9FB", red: "#B54242" };
 const page = { left: 78, top: 58, width: 1124, height: 604 };
@@ -15,6 +17,11 @@ const page = { left: 78, top: 58, width: 1124, height: 604 };
 async function writeBlob(filePath, blob) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, new Uint8Array(await blob.arrayBuffer()));
+}
+
+async function imageBytes(filePath) {
+  const bytes = await fs.readFile(filePath);
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 }
 
 function box(slide, text, position, style = {}) {
@@ -63,7 +70,7 @@ async function main() {
     label(slide, "Final Project", page.left, 118, 250);
     box(slide, "Toxic Comment\nDetection", { left: page.left, top: 164, width: 680, height: 180 }, { fontFamily: "Aptos Display", fontSize: 55, bold: true, color: colors.navy });
     box(slide, "Binary text classification with imbalance-aware evaluation", { left: page.left, top: 370, width: 710, height: 45 }, { fontSize: 24, color: colors.muted });
-    box(slide, "Team members and group: replace before submission", { left: page.left, top: 548, width: 650, height: 30 }, { fontSize: 18, color: colors.ink });
+    box(slide, "Alikhan Sailybaev | Danial Shaimurat | Arnur Adilkhan\nAAI-2601", { left: page.left, top: 538, width: 650, height: 50 }, { fontSize: 18, color: colors.ink });
     box(slide, "Data source: Jigsaw Toxic Comment Classification Challenge on Kaggle", { left: page.left, top: 592, width: 790, height: 25 }, { fontSize: 13, color: colors.muted });
   }
 
@@ -135,7 +142,7 @@ async function main() {
     box(slide, "Measures whether toxic comments receive higher scores than non-toxic comments across all thresholds.", { left: page.left, top: 275, width: 390, height: 100 }, { fontSize: 19, color: colors.ink });
     label(slide, "Threshold evidence", 600, 165, 260);
     bulletLines(slide, ["Precision: how many flagged comments are toxic", "Recall: how many toxic comments are detected", "F1: balance of precision and recall", "Confusion matrix at 0.50 threshold"], 600, 205, 540, 19);
-    box(slide, "The final report must use the official-data metrics generated in artifacts/metrics.json.", { left: page.left, top: 500, width: page.width, height: 34 }, { fontSize: 19, color: colors.red, italic: true });
+    box(slide, `Official result: ${metrics.model_name} | ROC-AUC ${metrics.roc_auc.toFixed(4)} | F1 ${metrics.f1.toFixed(4)}`, { left: page.left, top: 500, width: page.width, height: 34 }, { fontSize: 19, color: colors.red, italic: true });
     footer(slide);
   }
 
@@ -156,16 +163,15 @@ async function main() {
     footer(slide);
   }
 
-  // 7. Results plan
+  // 7. Official results
   {
     const slide = presentation.slides.add();
     slide.background.fill = colors.pale;
-    title(slide, "Results to present after the official run", "Never report the synthetic sample as final-model evidence");
-    label(slide, "Generated files", page.left, 165, 240);
-    bulletLines(slide, ["comparison.csv with both model metrics", "metrics.json for the selected model", "roc_curve.png and confusion_matrix.png", "best_model.joblib for custom predictions"], page.left, 205, 520, 19);
-    label(slide, "Discussion points", 720, 165, 240);
-    bulletLines(slide, ["Which model has higher ROC-AUC?", "Where does the confusion matrix show risk?", "Which errors need moderation review?", "Would a different threshold fit the use case?"], 720, 205, 420, 19);
-    box(slide, "Run: python -m src.cli compare --data data/raw/train.csv", { left: page.left, top: 500, width: page.width, height: 38 }, { fontSize: 21, bold: true, color: colors.navy });
+    title(slide, "Official model results", "Held-out test set with stratified split and random_state 42");
+    box(slide, `Selected model: ${metrics.model_name}`, { left: page.left, top: 145, width: 450, height: 35 }, { fontSize: 22, bold: true, color: colors.navy });
+    box(slide, `ROC-AUC ${metrics.roc_auc.toFixed(4)}   PR-AUC ${metrics.pr_auc.toFixed(4)}\nPrecision ${metrics.precision.toFixed(4)}   Recall ${metrics.recall.toFixed(4)}   F1 ${metrics.f1.toFixed(4)}`, { left: page.left, top: 190, width: 510, height: 70 }, { fontSize: 20, color: colors.ink });
+    slide.images.add({ blob: await imageBytes(path.join(workspaceDir, "artifacts", "roc_curve.png")), contentType: "image/png", alt: "ROC curve for selected model", fit: "contain", position: { left: page.left, top: 290, width: 470, height: 285 } });
+    slide.images.add({ blob: await imageBytes(path.join(workspaceDir, "artifacts", "confusion_matrix.png")), contentType: "image/png", alt: "Confusion matrix for selected model", fit: "contain", position: { left: 650, top: 155, width: 470, height: 420 } });
     footer(slide);
   }
 
@@ -173,11 +179,11 @@ async function main() {
   {
     const slide = presentation.slides.add();
     slide.background.fill = "white";
-    title(slide, "Conclusion and team contribution", "A reproducible baseline that can be extended with a transformer experiment");
+    title(slide, "Conclusion and team contribution", "A reproducible baseline with clear limitations and next steps");
     label(slide, "Conclusion", page.left, 165, 180);
     bulletLines(slide, ["The project makes imbalance visible through class weights and suitable metrics", "The comparison tests whether character features add value", "SQLite supports repeatable quantitative and qualitative analysis"], page.left, 205, 1030, 20);
-    label(slide, "Contribution statement", page.left, 425, 250);
-    box(slide, "Replace with real member names, groups, and responsibilities before submission. Each member should be ready to explain the code and results during the defense.", { left: page.left, top: 463, width: 1040, height: 60 }, { fontSize: 20, color: colors.red, italic: true });
+    label(slide, "Error analysis and contributions", page.left, 405, 330);
+    box(slide, "False positives can contain hostile vocabulary but still carry a non-toxic annotation, which may reflect quotation or context. False negatives are often long, indirect, or sarcastic comments.\n\nAlikhan: data and SQL | Danial: models and evaluation | Arnur: error analysis, report, slides, and demonstration", { left: page.left, top: 443, width: 1040, height: 100 }, { fontSize: 18, color: colors.ink });
     footer(slide);
   }
 
@@ -203,7 +209,7 @@ async function main() {
     // The bundled renderer resolves the requested Office fonts to Arial in the exported file.
     fontPolicy: { basis: "design", families: ["Arial"] },
     verifyArtifactToolImport: true,
-    receiptPath: path.join(stagingDir, "presentation.validation.json"),
+    receiptPath: path.join(stagingDir, "toxic_comment_detection_submission.validation.json"),
   });
   console.log(JSON.stringify({ finalPath: FINAL_PPTX, result }, null, 2));
 }

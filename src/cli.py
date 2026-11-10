@@ -7,6 +7,7 @@ from pathlib import Path
 from .config import ARTIFACTS_DIR, DATABASE_PATH
 from .data import dataset_summary, load_comments
 from .database import initialise_database, run_query, save_run
+from .eda import generate_eda
 from .modeling import compare_models, predict_text
 
 
@@ -17,14 +18,22 @@ def prepare(data_path: str) -> None:
     print(f"SQLite database created: {DATABASE_PATH}")
 
 
-def compare(data_path: str, test_size: float) -> None:
+def compare(data_path: str, test_size: float, run_eda: bool = True, include_bow: bool = False) -> None:
     frame = load_comments(data_path)
     initialise_database(DATABASE_PATH, frame)
-    results = compare_models(frame, ARTIFACTS_DIR, test_size, data_path)
+    if run_eda:
+        generate_eda(frame, ARTIFACTS_DIR)
+    results = compare_models(frame, ARTIFACTS_DIR, test_size, data_path, include_bow)
     for result in results:
         run_id = save_run(DATABASE_PATH, result, result["test_predictions"])
         print(f"{result['model_name']}: ROC-AUC={result['roc_auc']:.4f}, F1={result['f1']:.4f}, run_id={run_id}")
     print(f"Saved outputs in {ARTIFACTS_DIR}")
+
+
+def eda(data_path: str) -> None:
+    frame = load_comments(data_path)
+    generate_eda(frame, ARTIFACTS_DIR)
+    print(f"Saved EDA figures in {ARTIFACTS_DIR}")
 
 
 def sql(name: str) -> None:
@@ -43,10 +52,11 @@ def sql(name: str) -> None:
 def menu(default_data: str) -> None:
     options = {
         "1": "Check dataset and import it into SQLite",
-        "2": "Train and compare models",
-        "3": "Run class-balance SQL query",
-        "4": "Run model leaderboard SQL query",
-        "5": "Classify a custom comment",
+        "2": "Create exploratory data analysis figures",
+        "3": "Train and compare models",
+        "4": "Run class-balance SQL query",
+        "5": "Run model leaderboard SQL query",
+        "6": "Classify a custom comment",
         "0": "Exit",
     }
     while True:
@@ -58,12 +68,14 @@ def menu(default_data: str) -> None:
             if choice == "1":
                 prepare(default_data)
             elif choice == "2":
-                compare(default_data, 0.2)
+                eda(default_data)
             elif choice == "3":
-                sql("class_distribution")
+                compare(default_data, 0.2)
             elif choice == "4":
-                sql("leaderboard")
+                sql("class_distribution")
             elif choice == "5":
+                sql("leaderboard")
+            elif choice == "6":
                 text = input("Comment: ").strip()
                 probability, label = predict_text(ARTIFACTS_DIR, text)
                 print(f"Toxic probability: {probability:.3f}; prediction: {'toxic' if label else 'non-toxic'}")
@@ -78,11 +90,13 @@ def menu(default_data: str) -> None:
 def parser() -> argparse.ArgumentParser:
     command = argparse.ArgumentParser(description="Toxic Comment Detection final project")
     sub = command.add_subparsers(dest="command")
-    for name in ("prepare", "compare"):
+    for name in ("prepare", "compare", "eda"):
         item = sub.add_parser(name)
         item.add_argument("--data", default="data/raw/train.csv")
         if name == "compare":
             item.add_argument("--test-size", type=float, default=0.2)
+            item.add_argument("--skip-eda", action="store_true", help="Reuse existing EDA figures instead of regenerating them")
+            item.add_argument("--include-bow", action="store_true", help="Add the optional Bag-of-Words baseline")
     item = sub.add_parser("sql")
     item.add_argument("--name", required=True)
     item = sub.add_parser("predict")
@@ -96,7 +110,7 @@ def main() -> None:
     if args.command == "prepare":
         prepare(args.data)
     elif args.command == "compare":
-        compare(args.data, args.test_size)
+        compare(args.data, args.test_size, not args.skip_eda, args.include_bow)
     elif args.command == "sql":
         sql(args.name)
     elif args.command == "predict":

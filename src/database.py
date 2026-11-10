@@ -52,6 +52,7 @@ def initialise_database(database_path: Path, comments: pd.DataFrame) -> None:
             """
         )
         conn.execute("DELETE FROM predictions")
+        conn.execute("DELETE FROM model_runs")
         conn.execute("DELETE FROM comments")
         comments.rename(columns={"id": "comment_id"}).to_sql("comments", conn, if_exists="append", index=False)
 
