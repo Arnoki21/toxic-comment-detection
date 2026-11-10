@@ -1,0 +1,15 @@
+__pycache__/
+.pytest_cache/
+.venv/
+data/raw/*.csv
+data/raw/*.zip
+data/processed/*.parquet
+artifacts/*.joblib
+artifacts/*.json
+artifacts/*.png
+artifacts/*.csv
+toxic_comments.db
+build/
+.codex-finalizer/
+presentation/node_modules/
+

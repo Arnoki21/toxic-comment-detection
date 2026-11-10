@@ -1,0 +1,26 @@
+id,comment_text,toxic,severe_toxic,obscene,threat,insult,identity_hate
+1,"Thank you for explaining this topic clearly.",0,0,0,0,0,0
+2,"I disagree, but your sources are useful.",0,0,0,0,0,0
+3,"This edit makes the article easier to read.",0,0,0,0,0,0
+4,"Could you add a citation for this claim?",0,0,0,0,0,0
+5,"The examples are helpful for new readers.",0,0,0,0,0,0
+6,"Please keep the discussion focused on the evidence.",0,0,0,0,0,0
+7,"I appreciate the detailed feedback.",0,0,0,0,0,0
+8,"The date in this section needs correction.",0,0,0,0,0,0
+9,"That is a thoughtful interpretation.",0,0,0,0,0,0
+10,"We can resolve this with a reliable source.",0,0,0,0,0,0
+11,"You are an idiot and nobody wants your opinion.",1,0,0,0,1,0
+12,"This is a stupid edit. Stop ruining the page.",1,0,0,0,1,0
+13,"Go away, you useless troll.",1,0,0,0,1,0
+14,"Your comment is garbage and you should be ashamed.",1,0,0,0,1,0
+15,"I hate your pointless contribution.",1,0,0,0,1,0
+16,"Only a fool would write something so bad.",1,0,0,0,1,0
+17,"Delete this nonsense now, you clown.",1,0,0,0,1,0
+18,"What a ridiculous and ignorant statement.",1,0,0,0,1,0
+19,"Please do not use personal attacks in the discussion.",0,0,0,0,0,0
+20,"The neutral wording improves the article.",0,0,0,0,0,0
+21,"I can help rewrite this paragraph tomorrow.",0,0,0,0,0,0
+22,"That argument needs stronger evidence.",0,0,0,0,0,0
+23,"You are behaving like a complete idiot.",1,0,0,0,1,0
+24,"Nobody asked for your worthless comments.",1,0,0,0,1,0
+
