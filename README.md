@@ -2,15 +2,24 @@
 
 A reproducible final project for binary toxic-comment classification using the Jigsaw Toxic Comment Classification Challenge dataset. The project compares two TF-IDF + Logistic Regression models, handles class imbalance, reports ROC-AUC and a confusion matrix, stores data and predictions in SQLite, and exposes the workflow through a console menu.
 
+## Project Goal
+
+The goal is to classify each Wikipedia discussion comment as **toxic** or **non-toxic**. The project answers four practical questions:
+
+1. How imbalanced is the toxic/non-toxic target?
+2. Does adding character n-grams improve a word TF-IDF baseline?
+3. Which model produces the strongest held-out ROC-AUC?
+4. What false positives and false negatives should a moderator review?
+
 ## Team
 
-| Full name | Group | Contribution |
+| Team member | Main responsibility | Concrete deliverables | Share |
 | --- | --- | --- |
-| Replace with member 1 | Replace with group | Data preparation, SQLite database, exploratory analysis |
-| Replace with member 2 | Replace with group | Model training, evaluation, error analysis |
-| Replace with member 3 | Replace with group | Documentation, presentation, demo |
+| **Member 1: replace with name and group** | Data and database | Download and validate `train.csv`; analyze missing values and class balance; explain the SQLite schema; interpret SQL queries 1-3 | 33% |
+| **Member 2: replace with name and group** | Modeling and evaluation | Explain TF-IDF, Logistic Regression, stratified split, class weights, ROC-AUC, precision, recall, F1, ROC curve, and confusion matrix; run model comparison | 33% |
+| **Member 3: replace with name and group** | Error analysis and delivery | Review false positives and false negatives; update report results, prepare slides, check reproducibility, and lead the project demonstration | 33% |
 
-Update this table and the same table in the report and presentation before submission.
+All members must understand the full project and be able to run `python -m src.cli`. During the defense, Member 1 presents the data, Member 2 presents models and metrics, and Member 3 presents error analysis and conclusions. Update this table and the same table in the report and presentation before submission.
 
 ## Dataset
 
@@ -18,39 +27,68 @@ Download `train.csv` from the [Jigsaw Toxic Comment Classification Challenge](ht
 
 The training data contains a `comment_text` column and six label columns. This project uses `toxic` as the binary target required by the selected topic. The other label columns remain available in SQLite for future analysis.
 
+| Column | Description | Project use |
+| --- | --- | --- |
+| `id` | Unique comment identifier | Database key and prediction join |
+| `comment_text` | Original Wikipedia discussion comment | Model input |
+| `toxic` | Main binary label | Target: 1 toxic, 0 non-toxic |
+| Other five labels | More specific toxicity labels | Stored for further analysis |
+
 ## Quick start
 
 Python 3.11 is recommended.
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python -m src.cli
+cd "C:\Users\Lenovo\OneDrive\Документы\ChatGPT\programmingAI_final"
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m src.cli
 ```
+
+Using `.\.venv\Scripts\python.exe` avoids PowerShell execution-policy problems and ensures the project uses its own installed packages.
 
 Or run the reproducible command sequence:
 
 ```powershell
-python -m src.cli prepare --data data/raw/train.csv
-python -m src.cli compare --data data/raw/train.csv
-python -m src.cli sql --name class_distribution
-python -m src.cli predict --text "Your custom comment goes here"
+.\.venv\Scripts\python.exe -m src.cli prepare --data data/raw/train.csv
+.\.venv\Scripts\python.exe -m src.cli compare --data data/raw/train.csv
+.\.venv\Scripts\python.exe -m src.cli sql --name class_distribution
+.\.venv\Scripts\python.exe -m src.cli predict --text "Your custom comment goes here"
 ```
 
 ## What the project does
 
 1. Validates the input file and removes missing comments.
-2. Creates a stratified train/test split and records class imbalance.
-3. Compares a word n-gram TF-IDF baseline with a combined word-and-character n-gram model.
-4. Selects the model with the best validation ROC-AUC.
-5. Writes ROC and confusion-matrix figures plus a machine-readable metrics file to `artifacts/`.
-6. Saves comments, experiment runs, predictions, and error cases in SQLite.
-7. Provides eight documented SQL queries in `sql_queries.sql`.
+2. Normalizes whitespace and creates a character-length feature for analysis.
+3. Creates a stratified 80/20 train/test split with `random_state=42`.
+4. Handles class imbalance with `class_weight="balanced"` in Logistic Regression.
+5. Compares a word n-gram TF-IDF baseline with a combined word-and-character n-gram model.
+6. Selects the model with the best held-out ROC-AUC, using F1 as a tie-breaker.
+7. Writes ROC and confusion-matrix figures plus a machine-readable metrics file to `artifacts/`.
+8. Saves comments, experiment runs, predictions, and error cases in SQLite.
+9. Provides eight documented SQL queries in `sql_queries.sql`.
+
+## Models and Evaluation
+
+| Model | Features | Purpose |
+| --- | --- | --- |
+| `word_tfidf_lr` | Word TF-IDF, 1-2 grams | Clear, interpretable baseline for words and short phrases |
+| `word_char_tfidf_lr` | Word TF-IDF, 1-2 grams; character-within-word TF-IDF, 3-5 grams | Captures spelling variation and obfuscated toxic terms |
+
+Accuracy can be misleading for an imbalanced target, so the project reports ROC-AUC, PR-AUC, precision, recall, F1, and a confusion matrix at threshold 0.50. The generated false-positive and false-negative SQL queries support honest error analysis.
 
 ## Expected outputs
 
 After `compare`, the `artifacts/` directory contains `metrics.json`, `comparison.csv`, `roc_curve.png`, `confusion_matrix.png`, and `best_model.joblib`. Results depend on the exact data split and library versions, so the report and slides deliberately contain fields to fill from the generated metrics instead of invented scores.
+
+| Output | Purpose |
+| --- | --- |
+| `comparison.csv` | Metrics for both compared models |
+| `metrics.json` | Selected-model metrics, row counts, random seed, and data-source metadata |
+| `roc_curve.png` | ROC curve for the selected model |
+| `confusion_matrix.png` | Classification outcomes at the 0.50 threshold |
+| `best_model.joblib` | Model used by the custom-prediction command |
+| `toxic_comments.db` | SQLite comments, runs, and predictions tables |
 
 ## Project structure
 
@@ -68,11 +106,33 @@ tests/               Smoke tests
 ## Testing without Kaggle data
 
 ```powershell
-pytest -q
-python -m src.cli compare --data data/sample_train.csv --test-size 0.25
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe -m src.cli compare --data data/sample_train.csv --test-size 0.25
 ```
 
 The sample file only verifies that the pipeline works. Do not use its metrics in the final report or presentation.
+
+## SQL Queries
+
+The SQLite database has three related tables: `comments`, `model_runs`, and `predictions`. The eight queries in `sql_queries.sql` cover class balance, length statistics, longest comments, a model leaderboard, confusion-matrix cells, high-confidence false positives, high-confidence false negatives, and a CTE/window-function ranking.
+
+For example:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.cli sql --name ranking
+```
+
+Available names: `class_distribution`, `average_length`, `longest_comments`, `leaderboard`, `confusion_cells`, `false_positives`, `false_negatives`, and `ranking`.
+
+## Final Submission Checklist
+
+- [ ] Replace the three team-member placeholders here, in the report, and in the presentation.
+- [ ] Download the official Kaggle `train.csv` file.
+- [ ] Run `compare` on the official dataset.
+- [ ] Add the generated official metrics and figures to the report and slides.
+- [ ] Discuss representative false positives and false negatives.
+- [ ] Demonstrate the console menu and a custom prediction.
+- [ ] Push the final version to GitHub.
 
 ## Optional Transformer extension
 
