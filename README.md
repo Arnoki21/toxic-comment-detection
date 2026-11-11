@@ -1,6 +1,6 @@
 # Toxic Comment Detection
 
-A reproducible final project for binary toxic-comment classification using the Jigsaw Toxic Comment Classification Challenge dataset. The project compares two TF-IDF + Logistic Regression models, handles class imbalance, reports ROC-AUC and a confusion matrix, stores data and predictions in SQLite, and exposes the workflow through a console menu.
+Final project for binary toxic-comment classification using the Jigsaw Toxic Comment Classification Challenge dataset. The project compares two TF-IDF + Logistic Regression models, handles class imbalance, reports ROC-AUC and a confusion matrix, stores data and predictions in SQLite, and exposes the workflow through a console menu.
 
 ## Project Goal
 
@@ -13,17 +13,15 @@ The goal is to classify each Wikipedia discussion comment as **toxic** or **non-
 
 ## Team
 
-| Team member | Main responsibility | Concrete deliverables | Share |
+| Team member | Main responsibility | Concrete deliverables |
 | --- | --- | --- |
-| **Alikhan Sailybaev, AAI-2601** | Data and database | Validate `train.csv`; analyze missing values and class balance; explain the SQLite schema; interpret SQL queries 1-3 | 33% |
-| **Danial Shaimurat, AAI-2601** | Modeling and evaluation | Explain TF-IDF, Logistic Regression, stratified split, class weights, ROC-AUC, precision, recall, F1, ROC curve, and confusion matrix; run model comparison | 33% |
-| **Arnur Adilkhan, AAI-2601** | Error analysis and delivery | Review false positives and false negatives; update report results, prepare slides, check reproducibility, and lead the project demonstration | 33% |
-
-All members must understand the full project and be able to run `python -m src.cli`. During the defense, Member 1 presents the data, Member 2 presents models and metrics, and Member 3 presents error analysis and conclusions. Update this table and the same table in the report and presentation before submission.
+| **Alikhan Sailybaev, AAI-2601** | Data and database | Validate `train.csv`; analyze missing values and class balance; explain the SQLite schema; interpret SQL queries 1-3 |
+| **Danial Shaimurat, AAI-2601** | Modeling and evaluation | Explain TF-IDF, Logistic Regression, stratified split, class weights, ROC-AUC, precision, recall, F1, ROC curve, and confusion matrix; run model comparison |
+| **Arnur Adilkhan, AAI-2601** | Error analysis and delivery | Review false positives and false negatives; update report results, prepare slides, check reproducibility, and lead the project demonstration |
 
 ## Dataset
 
-Download `train.csv` from the [Jigsaw Toxic Comment Classification Challenge](https://www.kaggle.com/competitions/jigsaw-toxic-comment-classification-challenge). Kaggle authentication may be required. Put the file at `data/raw/train.csv`.
+[Jigsaw Toxic Comment Classification Challenge](https://www.kaggle.com/competitions/jigsaw-toxic-comment-classification-challenge)
 
 The training data contains a `comment_text` column and six label columns. This project uses `toxic` as the binary target required by the selected topic. The other label columns remain available in SQLite for future analysis.
 
@@ -47,7 +45,7 @@ py -m venv .venv
 
 Using `.\.venv\Scripts\python.exe` avoids PowerShell execution-policy problems and ensures the project uses its own installed packages.
 
-Or run the reproducible command sequence:
+Or project might be executed with reproducible command sequence:
 
 ```powershell
 .\.venv\Scripts\python.exe -m src.cli prepare --data data/raw/train.csv
@@ -102,37 +100,6 @@ report/              Written report template
 presentation/        Final presentation template
 tests/               Smoke tests
 ```
-
-## Testing without Kaggle data
-
-```powershell
-.\.venv\Scripts\python.exe -m pytest -q
-.\.venv\Scripts\python.exe -m src.cli compare --data data/sample_train.csv --test-size 0.25
-```
-
-The sample file only verifies that the pipeline works. Do not use its metrics in the final report or presentation.
-
-## SQL Queries
-
-The SQLite database has three related tables: `comments`, `model_runs`, and `predictions`. The eight queries in `sql_queries.sql` cover class balance, length statistics, longest comments, a model leaderboard, confusion-matrix cells, high-confidence false positives, high-confidence false negatives, and a CTE/window-function ranking.
-
-For example:
-
-```powershell
-.\.venv\Scripts\python.exe -m src.cli sql --name ranking
-```
-
-Available names: `class_distribution`, `average_length`, `longest_comments`, `leaderboard`, `confusion_cells`, `false_positives`, `false_negatives`, and `ranking`.
-
-## Final Submission Checklist
-
-- [ ] Replace the three team-member placeholders here, in the report, and in the presentation.
-- [ ] Download the official Kaggle `train.csv` file.
-- [ ] Run `compare` on the official dataset.
-- [ ] Add the generated official metrics and figures to the report and slides.
-- [ ] Discuss representative false positives and false negatives.
-- [ ] Demonstrate the console menu and a custom prediction.
-- [ ] Push the final version to GitHub.
 
 ## Optional Transformer extension
 
